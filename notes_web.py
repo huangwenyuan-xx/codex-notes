@@ -26,6 +26,7 @@ class Notes:
             self.selected = self.pins[-1]["id"] if self.pins else None
         self.font_size = max(13, min(20, self.state.get("web_font_size", 15)))
         self.topmost = self.state.get("topmost", True)
+        self.properties_collapsed = self.state.get("properties_collapsed", True) is not False
         self.theme = self.state.get("theme", "light")
         if self.theme not in ("light", "sage", "dark"):
             self.theme = "light"
@@ -37,7 +38,8 @@ class Notes:
     def _save(self):
         with self.lock:
             self.state.update(pins=self.pins, selected=self.selected,
-                              web_font_size=self.font_size, topmost=self.topmost, theme=self.theme)
+                              web_font_size=self.font_size, topmost=self.topmost, theme=self.theme,
+                              properties_collapsed=self.properties_collapsed)
             STATE_DIR.mkdir(parents=True, exist_ok=True)
             temporary = STATE_FILE.with_suffix(".tmp")
             temporary.write_text(json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -45,7 +47,8 @@ class Notes:
 
     def _snapshot(self):
         return {"pins": [{k: p.get(k, "") for k in ("id", "title", "status", "created_at", "source")} for p in self.pins],
-                "selected": self.selected, "fontSize": self.font_size, "topmost": self.topmost, "theme": self.theme}
+                "selected": self.selected, "fontSize": self.font_size, "topmost": self.topmost, "theme": self.theme,
+                "propertiesCollapsed": self.properties_collapsed}
 
     def get_state(self):
         with self.lock:
@@ -76,6 +79,8 @@ class Notes:
                 self.font_size = max(13, min(20, int(value)))
             elif action == "theme" and value in ("light", "sage", "dark"):
                 self.theme = value
+            elif action == "properties_collapsed" and isinstance(value, bool):
+                self.properties_collapsed = value
             self._save()
             return self._snapshot()
 

@@ -48,6 +48,10 @@ function renderState() {
   $('topmost').setAttribute('aria-pressed', String(state.topmost));
   $('topmost').title = state.topmost ? '取消置顶' : '置顶窗口';
   $('topmost').setAttribute('aria-label', $('topmost').title);
+  const collapsed = state.propertiesCollapsed !== false;
+  $('properties').hidden = collapsed;
+  $('properties-toggle').setAttribute('aria-expanded', String(!collapsed));
+  $('properties-toggle').title = collapsed ? '展开笔记信息' : '收起笔记信息';
   renderList();
 }
 async function select(id, resetScroll = true) {
@@ -114,6 +118,14 @@ window.refreshNotes = async () => {
   state = await api().get_state(); renderState(); await select(state.selected);
 };
 function bind(id, action) { $(id).onclick = () => safely(action); }
+bind('properties-toggle', async () => {
+  const button = $('properties-toggle');
+  button.disabled = true;
+  try {
+    state = await api().change('properties_collapsed', null, state.propertiesCollapsed === false);
+    renderState();
+  } finally { button.disabled = false; }
+});
 bind('minimize', () => api().window_action('minimize'));
 window.setMaximized = maximized => {
   document.body.classList.toggle('maximized', maximized);

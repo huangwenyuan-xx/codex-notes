@@ -60,6 +60,19 @@ class NotebookTests(unittest.TestCase):
         notes.change('theme', value='dark')
         self.assertEqual(notes.change('theme', value='unknown')['theme'], 'dark')
 
+    def test_properties_visibility_persists_without_changing_note(self):
+        pin = pin_reply.make_pin('Test', 'Keep this text', 'Source')
+        notes = notes_web.Notes(self.args, pin)
+        self.assertTrue(notes.get_state()['propertiesCollapsed'])
+        self.assertFalse(notes.change('properties_collapsed', value=False)['propertiesCollapsed'])
+        reopened = notes_web.Notes(self.args)
+        self.assertFalse(reopened.get_state()['propertiesCollapsed'])
+        self.assertEqual(reopened.pins, [pin])
+        self.assertEqual(reopened.selected, pin['id'])
+        self.assertFalse(reopened.change('properties_collapsed', value='false')['propertiesCollapsed'])
+        reopened.change('properties_collapsed', value=True)
+        self.assertTrue(notes_web.Notes(self.args).get_state()['propertiesCollapsed'])
+
     def test_send_uses_length_prefixed_utf8(self):
         server = socket.socket()
         self.addCleanup(server.close)

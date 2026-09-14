@@ -9,6 +9,7 @@ A local floating notebook for keeping AI replies visible while you work.
 ## 功能
 
 - 单窗口多条笔记，标题和来源搜索，进行中 / 已完成筛选。
+- 状态、固定时间、来源可折叠，默认收起，并记住展开 / 收起的选择。
 - Markdown 标题、列表、表格、引用与代码块；代码块独立复制。
 - 路径旁的一键复制按钮，支持行内代码、文件链接及正文常见的 Windows / Linux 路径；原有笔记同样生效。
 - 窗口置顶、拖动、边缘缩放、最大化 / 还原和最小化。

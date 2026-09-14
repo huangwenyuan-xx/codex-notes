@@ -45,7 +45,8 @@
         <article id="document" hidden>
           <div class="page-symbol"><i data-lucide="file-text"></i></div>
           <h1 id="title"></h1>
-          <div class="properties">
+          <button id="properties-toggle" class="properties-toggle" aria-expanded="false" aria-controls="properties" title="展开笔记信息"><i data-lucide="chevron-right"></i><span>笔记信息</span></button>
+          <div id="properties" class="properties" hidden>
             <div class="property"><span><i data-lucide="circle-dot"></i>状态</span><button id="status" class="status"><span class="status-dot"></span><span id="status-label">进行中</span></button></div>
             <div class="property"><span><i data-lucide="clock-3"></i>固定时间</span><time id="created"></time></div>
             <div class="property"><span><i data-lucide="link-2"></i>来源</span><span id="source"></span></div>

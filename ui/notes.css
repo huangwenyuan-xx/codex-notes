@@ -31,4 +31,5 @@ main{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}.pa
 :root:is([data-theme=sage],[data-theme=dark]) #cancel{background:var(--soft);color:var(--ink)}
 :root:is([data-theme=sage],[data-theme=dark]) ::-webkit-scrollbar-thumb{background:var(--scroll)}
 .copyable-path{overflow-wrap:anywhere}.icon.path-copy{width:24px;height:24px;padding:5px;margin:0 2px;vertical-align:middle;user-select:none}.icon.path-copy svg{width:13px;height:13px}
+.properties-toggle{display:flex;align-items:center;gap:5px;min-height:26px;padding:3px 5px;margin-left:-5px;font-size:11px;color:var(--quiet,#96968e)}.properties-toggle svg{width:13px;height:13px}.properties-toggle[aria-expanded=true]{margin-bottom:12px}.properties-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
