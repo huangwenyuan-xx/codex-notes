@@ -79,22 +79,11 @@ async function select(id, resetScroll = true) {
 }
 function renderMarkdown(container, html) {
   container.innerHTML = html;
-  PathCopy.decorate(container, path => {
-    const button = document.createElement('button');
-    button.className = 'icon path-copy';
-    button.title = '复制路径'; button.setAttribute('aria-label', '复制路径');
-    button.dataset.path = path;
-    button.innerHTML = icon('copy');
-    button.onclick = event => {
-      event.preventDefault(); event.stopPropagation();
-      safely(async () => {
-        await api().copy_text(path); toast('路径已复制');
-        button.innerHTML = icon('check'); icons();
-        setTimeout(() => { button.innerHTML = icon('copy'); icons(); }, 1500);
-      });
-    };
-    return button;
-  });
+  PathCopy.decorate(container, (path, target) => safely(async () => {
+    await api().copy_text(path); toast('路径已复制');
+    target.classList.add('copied');
+    setTimeout(() => target.classList.remove('copied'), 1200);
+  }));
   container.querySelectorAll('pre').forEach(pre => {
     const code = pre.querySelector('code');
     const block = document.createElement('section'); block.className = 'code-block';
