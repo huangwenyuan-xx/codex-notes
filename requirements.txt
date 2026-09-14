@@ -1,0 +1,2 @@
+pywebview==6.2.1
+markdown-it-py==4.2.0

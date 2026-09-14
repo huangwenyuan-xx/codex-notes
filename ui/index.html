@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Notes</title>
+  <link rel="stylesheet" href="notes.css">
+  <script src="vendor/lucide.min.js" defer></script>
+  <script src="notes.js" defer></script>
+</head>
+<body>
+  <header class="titlebar">
+    <button class="icon" id="sidebar-toggle" title="展开 / 收起侧栏" aria-label="展开 / 收起侧栏"><i data-lucide="panel-left"></i></button>
+    <div class="pywebview-drag-region title-path"><span>Codex Notes</span><span class="path-separator">/</span><span id="breadcrumb">固定回复</span></div>
+    <button class="icon" id="topmost" title="取消置顶" aria-label="取消置顶" aria-pressed="true"><i data-lucide="pin"></i></button>
+    <span class="window-divider"></span>
+    <button class="icon window-button" id="minimize" title="最小化到任务栏" aria-label="最小化到任务栏"><i data-lucide="minus"></i></button>
+    <button class="icon window-button" id="maximize" title="最大化" aria-label="最大化"><i data-lucide="square"></i></button>
+    <button class="icon window-button close" id="close" title="关闭窗口" aria-label="关闭窗口"><i data-lucide="x"></i></button>
+  </header>
+  <div class="workspace">
+    <aside id="sidebar">
+      <div class="workspace-name"><span class="workspace-mark"><i data-lucide="notebook"></i></span><span>我的笔记</span></div>
+      <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="搜索回复…" aria-label="搜索回复"></label>
+      <div class="filters" role="tablist" aria-label="回复状态">
+        <button role="tab" data-filter="all" aria-selected="true">全部</button>
+        <button role="tab" data-filter="active" aria-selected="false">进行中</button>
+        <button role="tab" data-filter="done" aria-selected="false">已完成</button>
+      </div>
+      <div class="list-heading"><span>固定回复</span><span id="count">0</span></div>
+      <nav id="pages" aria-label="固定回复"></nav>
+      <div class="sidebar-footer"><i data-lucide="hard-drive"></i><span>保存在本机</span><span class="saved-dot"></span></div>
+    </aside>
+    <main>
+      <div class="page-toolbar">
+        <span id="page-position">固定回复</span>
+        <div class="page-actions">
+          <button class="icon note-action" id="copy" title="复制整条回复" aria-label="复制整条回复"><i data-lucide="copy"></i></button>
+          <button class="icon note-action" id="export" title="导出 Markdown" aria-label="导出 Markdown"><i data-lucide="download"></i></button>
+          <button class="icon" id="more" title="更多操作" aria-label="更多操作" aria-expanded="false"><i data-lucide="ellipsis"></i></button>
+        </div>
+      </div>
+      <div id="scroller">
+        <article id="document" hidden>
+          <div class="page-symbol"><i data-lucide="file-text"></i></div>
+          <h1 id="title"></h1>
+          <div class="properties">
+            <div class="property"><span><i data-lucide="circle-dot"></i>状态</span><button id="status" class="status"><span class="status-dot"></span><span id="status-label">进行中</span></button></div>
+            <div class="property"><span><i data-lucide="clock-3"></i>固定时间</span><time id="created"></time></div>
+            <div class="property"><span><i data-lucide="link-2"></i>来源</span><span id="source"></span></div>
+          </div>
+          <div class="page-rule"></div>
+          <div id="body" class="markdown"></div>
+          <div class="document-end"><i data-lucide="check"></i>已保存</div>
+        </article>
+        <div id="empty" class="empty"><i data-lucide="files"></i><h2>还没有固定回复</h2></div>
+      </div>
+      <div id="menu" class="menu" hidden>
+        <fieldset class="theme-picker">
+          <legend>配色</legend>
+          <label><input type="radio" name="theme" value="light" checked><span class="theme-swatch swatch-light"></span><span>纯白</span></label>
+          <label><input type="radio" name="theme" value="sage"><span class="theme-swatch swatch-sage"></span><span>柔和绿</span></label>
+          <label><input type="radio" name="theme" value="dark"><span class="theme-swatch swatch-dark"></span><span>深色</span></label>
+        </fieldset>
+        <div class="menu-divider"></div>
+        <div class="font-control"><span>文字大小</span><button id="font-down" class="icon" title="缩小文字" aria-label="缩小文字"><i data-lucide="minus"></i></button><output id="font-size">15</output><button id="font-up" class="icon" title="放大文字" aria-label="放大文字"><i data-lucide="plus"></i></button></div>
+        <div class="menu-divider"></div>
+        <button id="delete" class="menu-item note-action"><i data-lucide="trash-2"></i>删除当前回复</button>
+        <button id="clear" class="menu-item danger"><i data-lucide="list-x"></i>清空全部回复</button>
+      </div>
+    </main>
+  </div>
+  <dialog id="confirm"><h2 id="confirm-title"></h2><p>此操作会删除本机保存的内容。</p><div><button id="cancel">取消</button><button id="confirm-delete" class="danger-confirm">删除</button></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div class="resize-edge" data-edge="n" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="s" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="w" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="e" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="nw" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="ne" aria-hidden="true"></div>
+  <div class="resize-edge" data-edge="sw" aria-hidden="true"></div>
+  <div class="resize-edge resize-grip" data-edge="se" title="拖动调整窗口大小" aria-hidden="true"><i data-lucide="grip"></i></div>
+</body>
+</html>

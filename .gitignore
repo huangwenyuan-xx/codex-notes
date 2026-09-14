@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+skill/config.json
+state.json
+startup-error.log
+.env
+.env.*
