@@ -27,7 +27,14 @@ A local floating notebook for keeping AI replies visible while you work.
 
 ## 安装
 
-从 GitHub 克隆仓库，或下载源码 ZIP 解压。进入包含 `setup.ps1` 的目录，在 PowerShell 运行：
+从 GitHub 克隆仓库：
+
+```powershell
+git clone https://github.com/huangwenyuan-xx/codex-notes.git
+cd codex-notes
+```
+
+也可以 [下载源码 ZIP](https://github.com/huangwenyuan-xx/codex-notes/archive/refs/heads/main.zip) 解压。进入包含 `setup.ps1` 的目录，在 PowerShell 运行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
