@@ -1,5 +1,8 @@
 import json
+from pathlib import Path
+import runpy
 import socket
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -10,6 +13,18 @@ from remote_protocol import MAX_MESSAGE, receive, send
 class RemoteTests(unittest.TestCase):
     def setUp(self):
         self.receiver = Receiver({'token': 'test-only-pairing'})
+
+    def test_remote_client_uses_summary_title_without_slicing_body(self):
+        client = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'skill/scripts/pin_remote.py'))
+        body = '好的，下面详细说明。\n\n检查 SSH 配置。'
+        for title, expected in [('SSH 连接失败排查步骤', 'SSH 连接失败排查步骤'), ('Pinned reply', '未命名笔记')]:
+            captured = []
+            with patch.object(sys, 'argv', ['pin_remote.py', '--text', body, '--title', title]), \
+                    patch.dict(client['main'].__globals__, {'deliver': lambda pin, check: captured.append(pin)}), \
+                    patch('builtins.print'):
+                client['main']()
+            self.assertEqual(captured[0]['title'], expected)
+            self.assertEqual(captured[0]['text'], body)
 
     def test_bad_token_never_forwards(self):
         with patch('remote_bridge.send_to_running_window') as forward:

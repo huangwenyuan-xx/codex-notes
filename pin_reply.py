@@ -32,11 +32,8 @@ def load_state() -> dict:
 def normalize_title(title: str, text: str) -> str:
     if title.strip() not in ("", "Codex pinned reply", "Pinned reply", "固定：上条回复", "固定上条回复", "上条回复"):
         return title.strip()[:80]
-    for line in text.splitlines():
-        candidate = line.strip().strip("#*-` ")
-        if len(candidate) >= 6:
-            return candidate[:48]
-    return "Pinned reply"
+    # The calling agent supplies a semantic summary; offline CLI use must not fake one.
+    return "未命名笔记"
 
 
 def make_pin(title: str, text: str, source: str = "current Codex task", pin_id=None) -> dict:

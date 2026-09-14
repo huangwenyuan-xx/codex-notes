@@ -18,6 +18,7 @@ A local floating notebook for keeping AI replies visible while you work.
 - 纯白、柔和绿、深色配色，字号调整，设置自动保存。
 - 导出 Markdown，本机保存；内置图标无需在线 CDN。
 - 配套 `pin-reply` Skill，在新的 Codex 对话里说“固定上条回复”。
+- 固定时由 Codex 根据整条回复生成简短摘要标题，不截取第一句话；正文保持原样，用户指定的标题优先。
 
 正文中带空格的路径请用引号或 Markdown 行内代码包裹，避免把后面的说明文字当成路径。点击文件链接复制其完整目标路径，不包含源码行号；普通网页链接仍然打开网页。路径可用 Tab 聚焦后按 Enter 或空格复制。代码块复制按钮仅在悬停或键盘聚焦时显示，触屏上始终显示。
 
@@ -71,6 +72,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\pin-reply.ps1
 > 使用 $pin-reply 固定上条回复
 
 也可以说“固定刚才的部署步骤”。“上条回复”指当前对话的上一条完整回答，不会自动指向另一个会话。
+
+摘要标题由执行 Skill 的 Codex 生成，不需要额外 API 或密钥。直接用脚本固定时，请通过 `-Title` / `--title` 提供标题；未提供时显示“未命名笔记”，本地脚本不会自行调用模型。已有笔记标题不会批量改写。
 
 旧会话：在原会话里调用 Skill，或让 Codex 查找指定会话中的原文。若只能读取到摘要或截断内容，需提供原文。此工具不直接扫描全部 Codex 历史，不给消息气泡添加按钮，也不把 Skill 当作后台监听器。
 

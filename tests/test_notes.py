@@ -37,6 +37,14 @@ class NotebookTests(unittest.TestCase):
         self.assertEqual(reopened.pins[0]['status'], 'done')
         self.assertIn('<pre><code class="language-powershell">', reopened.get_note(pin['id'])['html'])
 
+    def test_summary_title_is_preserved_without_rewriting_body(self):
+        text = '可以，下面我详细说一下。\n\n## 磁盘清理\n请先核对风险。'
+        pin = pin_reply.make_pin('磁盘清理目录与风险核对', text)
+        self.assertEqual(pin['title'], '磁盘清理目录与风险核对')
+        self.assertEqual(pin['text'], text)
+        for title in ('', 'Pinned reply', '上条回复'):
+            self.assertEqual(pin_reply.make_pin(title, text)['title'], '未命名笔记')
+
     def test_markdown_cannot_inject_scripts(self):
         pin = pin_reply.make_pin('Test', '<script>alert(1)</script>\n\n[x](javascript:alert(1))')
         rendered = notes_web.Notes(self.args, pin).get_note(pin['id'])['html']

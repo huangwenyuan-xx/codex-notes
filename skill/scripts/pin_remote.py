@@ -31,9 +31,10 @@ def main():
     text = Path(args.file).read_text(encoding='utf-8-sig') if args.file else (args.text or '')
     pin = None
     if text.strip() and not args.check:
-        title = args.title
-        if title == 'Pinned reply':
-            title = next((line.strip().strip('#*-` ')[:48] for line in text.splitlines() if len(line.strip()) >= 6), title)
+        title = args.title.strip()
+        if title in ('', 'Pinned reply', 'Codex pinned reply', '固定：上条回复', '固定上条回复', '上条回复'):
+            title = '未命名笔记'
+        title = title[:80]
         pin = {'id': uuid.uuid4().hex, 'title': title, 'text': text.strip(), 'source': args.source,
                'status': 'active', 'created_at': datetime.now().isoformat(timespec='seconds')}
     deliver(pin, args.check)
