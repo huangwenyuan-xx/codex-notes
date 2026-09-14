@@ -30,4 +30,5 @@ main{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}.pa
 :root:is([data-theme=sage],[data-theme=dark]) :is(.danger:hover,.close:hover){background:var(--danger-bg)}
 :root:is([data-theme=sage],[data-theme=dark]) #cancel{background:var(--soft);color:var(--ink)}
 :root:is([data-theme=sage],[data-theme=dark]) ::-webkit-scrollbar-thumb{background:var(--scroll)}
+.copyable-path{overflow-wrap:anywhere}.icon.path-copy{width:24px;height:24px;padding:5px;margin:0 2px;vertical-align:middle;user-select:none}.icon.path-copy svg{width:13px;height:13px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}

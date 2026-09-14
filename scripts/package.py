@@ -12,6 +12,7 @@ FILES = [
     "docs/images/light.png", "docs/images/sage.png", "docs/images/dark.png", ".github/workflows/ci.yml",
     "remote_protocol.py", "remote_bridge.py", "connect_remote.py", "scripts/install_remote.py",
     "skill/scripts/pin_remote.py", "tests/test_remote.py",
+    "ui/path-copy.js", "tests/test_paths.cjs",
 ]
 
 
