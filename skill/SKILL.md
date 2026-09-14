@@ -1,6 +1,6 @@
 ---
 name: pin-reply
-description: Pin an assistant reply or specified passage into the local Codex Notes floating window. Use for 固定上条回复, 固定第 N 条回复, 把这段放到悬浮便利贴, or 打开便利贴, including new conversations. Not for pinning a conversation in the Codex sidebar.
+description: Pin an assistant reply into Codex Notes on the user's desktop, locally or from a paired remote Linux task over SSH. Use for 固定上条回复, 固定第 N 条回复, 把这段放到悬浮便利贴, or 打开便利贴. Not for pinning a conversation in the Codex sidebar.
 ---
 
 # Pin Reply
@@ -14,6 +14,20 @@ For “固定上条回复”, select the latest completed assistant answer BEFOR
 For a reply number or topic, locate the intended answer; clarify only if ambiguous. A new conversation does not automatically contain the old conversation's replies. For another conversation, use available thread-list/read tools to retrieve its original answer. If only a summary or truncated text is accessible, say so and request the passage or suggest invoking this skill in the original conversation. Never present an invented reconstruction as the original.
 
 ## Execution
+
+### Remote Linux / Headless Task
+
+If `scripts/pin_remote.py` exists next to this installed skill, use it from the Linux task:
+
+```bash
+python3 ABSOLUTE_SKILL_DIRECTORY/scripts/pin_remote.py --file ABSOLUTE_MARKDOWN_FILE --source 'current remote conversation'
+```
+
+Use `--check` to verify the bridge without adding a note, or no content arguments to open the desktop notebook. This client sends Markdown through an already-paired SSH tunnel to the user's Windows desktop. It does not create a Linux window or launch notes_http.py. Do not claim delivery until the client exits successfully. If disconnected, preserve the input and tell the user to open Codex Notes on their paired computer or rerun connect_remote.py there. Do not replace delivery with writing remote state.json, starting a web fallback, or opening a public port. The local pairing config contains a token: do not print it or send it in chat.
+
+If the remote client is absent, remote pairing has not been installed. The user must run the repository's connect_remote.py from their Windows desktop with their existing SSH host; do not guess a host or automatically install a Linux GUI.
+
+### Local Windows Task
 
 Resolve `scripts/pin.ps1` relative to THIS installed SKILL.md, and invoke it with an absolute path. Its sibling config.json records the app location, so do not assume any username, project directory, or working directory. If setup is missing, run setup.ps1 from the user's Codex Notes checkout; do not silently install from an unknown source.
 

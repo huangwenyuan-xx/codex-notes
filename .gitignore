@@ -8,3 +8,5 @@ state.json
 startup-error.log
 .env
 .env.*
+remote-bridge*.json
+remote-bridge.log

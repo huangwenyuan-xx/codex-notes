@@ -10,6 +10,8 @@ FILES = [
     "skill/SKILL.md", "skill/scripts/pin.ps1", "scripts/package.py", "tests/test_notes.py",
     "ui/index.html", "ui/notes.css", "ui/notes.js", "ui/vendor/lucide.min.js", "ui/vendor/LICENSE-lucide",
     "docs/images/light.png", "docs/images/sage.png", "docs/images/dark.png", ".github/workflows/ci.yml",
+    "remote_protocol.py", "remote_bridge.py", "connect_remote.py", "scripts/install_remote.py",
+    "skill/scripts/pin_remote.py", "tests/test_remote.py",
 ]
 
 

@@ -68,7 +68,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\pin-reply.ps1
 
 如果新对话未发现 Skill，重新打开 Codex 再试。技能入口是 `~/.codex/skills/pin-reply/SKILL.md`（或自定义 CODEX_HOME 中的对应位置）。
 
-## 命令行
+## 远程 Linux 会话固定到本机
+
+如果 Codex 任务运行在远程 Linux / 容器中，而你使用 Windows 桌面，运行窗口的仍然是本机。远端只安装 Python 标准库客户端，通过反向 SSH 通道传递选中的回复。
+
+先在 Windows 安装本工具，确认能够用现有 SSH 配置免交互连接目标主机，然后在本机仓库目录运行（将 `your-linux-host` 替换为你的 SSH 别名或 `user@host`）：
+
+```powershell
+.\.venv\Scripts\python.exe .\connect_remote.py --host your-linux-host
+```
+
+配对器会备份远端旧的 `pin-reply` Skill，安装远程发送入口，并验证从远端到桌面的通道。无需在远端安装 PowerShell、WebView2 或启动 HTTP 网页。
+
+在远端 Codex 对话里重新读取 / 使用 `$pin-reply`，再说“固定上条回复”。收到本机确认后才报告成功。命令行也可以运行远端已安装 Skill 下的 `scripts/pin_remote.py --file reply.md`。
+
+首次配对后，本机后台桥接会自动重连 SSH，并可在收到回复时打开已关闭的笔记窗口。电脑重启后先打开本机 Codex Notes，连接才会恢复；电脑关机或离线时无法投递，客户端会明确报错。不会自动同步全部远端历史。
+
+默认远端端口为 `127.0.0.1:48219`，本机接收端为 `127.0.0.1:48220`。它们只监听回环地址，使用独立配对令牌；SSH 主机密钥必须已验证，服务端须允许端口转发。支持自定义 `--remote-port` / `--local-port`，当前一次配对一个远端主机。无管理员权限或受限容器若不允许回环连接，需在允许连接的宿主运行客户端。
+
+断开并禁用自动恢复：
+
+```powershell
+.\.venv\Scripts\python.exe .\connect_remote.py --disconnect
+```
+
+本机配对信息保存在笔记数据目录中的 `remote-bridge.json`，远端保存在 Skill 的 `config.json`，均不进入源码包。遇到连接问题查看本机数据目录的 `remote-bridge.log`。这是远程任务到 Windows 桌面的适配，不是 Linux 原生桌面窗口支持。
+
+## 本机命令行
 
 ```powershell
 # 固定 UTF-8 Markdown 文件，长内容推荐这种方式

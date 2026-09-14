@@ -113,6 +113,9 @@ def main() -> int:
     pin = make_pin(args.title, text, args.source, pin_id) if text.strip() else None
     if args.send:
         return 0 if send_to_running_window(pin) else 1
+    if os.name == 'nt':
+        from remote_bridge import ensure_running
+        ensure_running()
     from notes_web import run
     return run(args, pin)
 

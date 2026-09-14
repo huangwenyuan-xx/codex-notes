@@ -19,7 +19,7 @@ class Notes:
         self.lock = threading.RLock()
         self.state = load_state()
         self.pins = self.state.get("pins", [])
-        if initial_pin:
+        if initial_pin and not any(p.get("id") == initial_pin["id"] for p in self.pins):
             self.pins.append(initial_pin)
         self.selected = self.state.get("selected")
         if initial_pin or not any(p["id"] == self.selected for p in self.pins):
