@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const icon = name => `<i data-lucide="${name}"></i>`;
 let state = {pins: [], selected: null, fontSize: 15, topmost: true};
 let current = null, filter = 'all', sequence = 0, pendingDelete = null, toastTimer;
+let editor = null, editing = null, editBusy = false, leavePending = null, closePending = false, previewSequence = 0;
 const api = () => window.pywebview.api;
 function icons() { lucide.createIcons(); }
 function toast(message) {
@@ -55,6 +56,7 @@ function renderState() {
   renderList();
 }
 async function select(id, resetScroll = true) {
+  if (editing && !await leaveEditor()) return;
   const request = ++sequence;
   const note = id ? await api().get_note(id) : null;
   if (request !== sequence) return;
@@ -71,8 +73,13 @@ async function select(id, resetScroll = true) {
   $('status').classList.toggle('done', note.status === 'done');
   $('status-label').textContent = note.status === 'done' ? '已完成' : '进行中';
   $('status').title = note.status === 'done' ? '改为进行中' : '标记为已完成';
-  $('body').innerHTML = note.html;
-  PathCopy.decorate($('body'), path => {
+  renderMarkdown($('body'), note.html);
+  if (resetScroll) $('scroller').scrollTop = 0;
+  if (innerWidth <= 550) document.body.classList.remove('sidebar-open');
+}
+function renderMarkdown(container, html) {
+  container.innerHTML = html;
+  PathCopy.decorate(container, path => {
     const button = document.createElement('button');
     button.className = 'icon path-copy';
     button.title = '复制路径'; button.setAttribute('aria-label', '复制路径');
@@ -88,7 +95,7 @@ async function select(id, resetScroll = true) {
     };
     return button;
   });
-  $('body').querySelectorAll('pre').forEach(pre => {
+  container.querySelectorAll('pre').forEach(pre => {
     const code = pre.querySelector('code');
     const block = document.createElement('section'); block.className = 'code-block';
     const bar = document.createElement('div'); bar.className = 'code-toolbar';
@@ -103,21 +110,149 @@ async function select(id, resetScroll = true) {
     });
     bar.append(lang, button); pre.before(block); block.append(bar, pre);
   });
-  $('body').querySelectorAll('table').forEach(table => {
+  container.querySelectorAll('table').forEach(table => {
     const wrapper = document.createElement('div'); wrapper.className = 'table-scroll';
     table.before(wrapper); wrapper.append(table);
   });
-  $('body').querySelectorAll('a').forEach(link => link.addEventListener('click', event => {
+  container.querySelectorAll('a').forEach(link => link.addEventListener('click', event => {
     event.preventDefault(); safely(() => api().open_link(link.getAttribute('href')));
   }));
   icons();
-  if (resetScroll) $('scroller').scrollTop = 0;
-  if (innerWidth <= 550) document.body.classList.remove('sidebar-open');
 }
 window.refreshNotes = async () => {
-  state = await api().get_state(); renderState(); await select(state.selected);
+  const incoming = await api().get_state();
+  if (editing) {
+    if (incoming.selected !== editing.id) toast('收到新固定回复，当前编辑已保留');
+    state = {...incoming, selected: editing.id}; renderState(); renderEditing();
+    return;
+  }
+  state = incoming; renderState(); await select(state.selected);
 };
 function bind(id, action) { $(id).onclick = () => safely(action); }
+const formats = [
+  ['bold', '加粗', 'toggleBold'], ['italic', '斜体', 'toggleItalic'],
+  ['strikethrough', '删除线', 'toggleStrikethrough'], ['heading-2', '二级标题', 'toggleHeading2'],
+  ['list', '项目列表', 'toggleUnorderedList'], ['list-ordered', '编号列表', 'toggleOrderedList'],
+  ['quote', '引用', 'toggleBlockquote'], ['code', '代码', 'toggleCodeBlock'],
+  ['link', '链接', 'drawLink'], ['table', '表格', 'drawTable'],
+  ['undo-2', '撤销', 'undo'], ['redo-2', '重做', 'redo'],
+];
+for (const [symbol, label, method] of formats) {
+  const button = document.createElement('button'); button.className = 'icon';
+  button.title = label; button.setAttribute('aria-label', label); button.dataset.format = method;
+  button.innerHTML = icon(symbol);
+  button.onmousedown = event => event.preventDefault();
+  button.onclick = () => { if (editing && !editBusy) { editor[method](); updateEditState(); } };
+  $('format-toolbar').append(button);
+}
+function isDirty() { return editing && editor.value() !== editing.original; }
+function updateEditState() {
+  if (!editing) return;
+  $('edit-state').textContent = editBusy ? '保存中…' : isDirty() ? '未保存' : '未修改';
+  const format = editor.getState();
+  const keys = {toggleBold: 'bold', toggleItalic: 'italic', toggleStrikethrough: 'strikethrough',
+    toggleHeading2: 'heading-2', toggleUnorderedList: 'unordered-list', toggleOrderedList: 'ordered-list',
+    toggleBlockquote: 'quote', toggleCodeBlock: 'code', drawLink: 'link'};
+  $('format-toolbar').querySelectorAll('button').forEach(button => {
+    const method = button.dataset.format;
+    button.disabled = editBusy || (method === 'undo' && !editor.codemirror.historySize().undo) || (method === 'redo' && !editor.codemirror.historySize().redo);
+    if (keys[method]) button.setAttribute('aria-pressed', String(!!format[keys[method]]));
+  });
+  for (const id of ['edit-save', 'edit-cancel', 'editor-write', 'editor-preview-tab']) $(id).disabled = editBusy;
+}
+function renderEditing() {
+  $('editor').hidden = !editing; $('body').hidden = !!editing; $('document-end').hidden = !!editing;
+  document.querySelectorAll('.note-action').forEach(button => button.disabled = !current || !!editing);
+  $('status').disabled = !!editing; $('clear').disabled = !!editing;
+  updateEditState();
+}
+async function beginEditor() {
+  if (!current || editing || editBusy) return;
+  editBusy = true;
+  try {
+    await api().set_editing(true);
+    ++sequence;
+    editing = {id: current.id, original: current.text};
+    $('editor').hidden = false;
+    if (!editor) {
+      editor = new EasyMDE({element: $('edit-text'), toolbar: false, status: false, spellChecker: false,
+        autoDownloadFontAwesome: false, autofocus: false, minHeight: '260px', maxHeight: '440px',
+        lineWrapping: true, unorderedListStyle: '-', forceSync: true,
+        shortcuts: {togglePreview: null, toggleSideBySide: null, toggleFullScreen: null, drawImage: null}});
+      editor.codemirror.on('change', updateEditState);
+      editor.codemirror.on('cursorActivity', updateEditState);
+      editor.codemirror.setOption('extraKeys', {...editor.codemirror.getOption('extraKeys'),
+        'Ctrl-S': () => safely(() => finishEditor(true)), 'Cmd-S': () => safely(() => finishEditor(true))});
+      editor.codemirror.getInputField().setAttribute('aria-label', 'Markdown 正文');
+    }
+    editor.value(editing.original); editor.codemirror.clearHistory();
+    editor.codemirror.setOption('readOnly', false);
+    showWrite(); renderEditing();
+    $('editor').scrollIntoView({block: 'start'});
+    editor.codemirror.refresh(); editor.codemirror.focus();
+  } catch (error) {
+    editing = null; await api().set_editing(false); renderEditing(); throw error;
+  } finally { editBusy = false; updateEditState(); }
+}
+function showWrite() {
+  ++previewSequence;
+  $('editor-input').hidden = false; $('format-toolbar').hidden = false; $('editor-preview').hidden = true;
+  $('editor-write').setAttribute('aria-selected', 'true'); $('editor-preview-tab').setAttribute('aria-selected', 'false');
+  editor?.codemirror.refresh();
+}
+async function showPreview() {
+  if (!editing || editBusy) return;
+  const request = ++previewSequence;
+  const html = await api().render_markdown(editor.value());
+  if (request !== previewSequence || !editing) return;
+  renderMarkdown($('editor-preview'), html);
+  $('editor-input').hidden = true; $('format-toolbar').hidden = true; $('editor-preview').hidden = false;
+  $('editor-write').setAttribute('aria-selected', 'false'); $('editor-preview-tab').setAttribute('aria-selected', 'true');
+}
+async function finishEditor(save) {
+  if (!editing || editBusy) return false;
+  editBusy = true; editor.codemirror.setOption('readOnly', true); updateEditState();
+  const id = editing.id;
+  try {
+    if (save && isDirty()) state = await api().save_note(id, editor.value(), editing.original);
+    await api().set_editing(false);
+    editing = null; ++previewSequence;
+    renderEditing(); renderState(); await select(id, false);
+    $('edit').focus();
+    if (save) toast('修改已保存');
+    return true;
+  } catch (error) {
+    toast('保存未完成，修改仍保留在编辑器中'); console.error(error); return false;
+  } finally {
+    editBusy = false; editor.codemirror.setOption('readOnly', false); updateEditState();
+  }
+}
+async function leaveEditor() {
+  if (!editing) return true;
+  if (editBusy) return false;
+  if (!isDirty()) return finishEditor(false);
+  if (leavePending) return leavePending;
+  leavePending = new Promise(resolve => {
+    const complete = result => { $('unsaved').close(); leavePending = null; resolve(result); };
+    $('edit-keep').onclick = () => complete(false);
+    $('edit-discard').onclick = async () => complete(await finishEditor(false));
+    $('edit-save-leave').onclick = async () => complete(await finishEditor(true));
+    $('unsaved').oncancel = event => { event.preventDefault(); complete(false); };
+    $('unsaved').showModal(); $('edit-keep').focus();
+  });
+  return leavePending;
+}
+window.requestNotesClose = async () => {
+  if (closePending) return;
+  closePending = true;
+  try { if (await leaveEditor()) await api().window_action('close'); }
+  finally { closePending = false; }
+};
+bind('edit', beginEditor);
+bind('edit-save', () => finishEditor(true));
+bind('edit-cancel', leaveEditor);
+bind('editor-write', showWrite);
+bind('editor-preview-tab', showPreview);
 bind('properties-toggle', async () => {
   const button = $('properties-toggle');
   button.disabled = true;
@@ -142,7 +277,7 @@ document.querySelectorAll('[data-edge]').forEach(edge => {
     safely(() => api().resize_from_edge(edge.dataset.edge));
   });
 });
-bind('close', () => api().window_action('close'));
+bind('close', window.requestNotesClose);
 bind('topmost', async () => { state.topmost = await api().window_action('topmost'); renderState(); });
 bind('sidebar-toggle', () => {
   if (innerWidth <= 550) document.body.classList.toggle('sidebar-open');
@@ -184,8 +319,11 @@ document.querySelectorAll('[data-filter]').forEach(button => button.onclick = ()
   renderList();
 });
 document.addEventListener('keydown', event => {
+  if (editing && !event.isComposing && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault(); safely(() => finishEditor(true)); return;
+  }
   if (event.key === 'Escape' && !$('confirm').open) { $('menu').hidden = true; document.body.classList.remove('sidebar-open'); }
-  if (event.ctrlKey && event.key.toLowerCase() === 'c' && !window.getSelection().toString() && !event.target.matches('input')) {
+  if (event.ctrlKey && event.key.toLowerCase() === 'c' && !window.getSelection().toString() && !event.target.closest('input, textarea, [contenteditable=true], .CodeMirror')) {
     event.preventDefault(); $('copy').click();
   }
 });

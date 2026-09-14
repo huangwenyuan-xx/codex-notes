@@ -13,6 +13,9 @@ FILES = [
     "remote_protocol.py", "remote_bridge.py", "connect_remote.py", "scripts/install_remote.py",
     "skill/scripts/pin_remote.py", "tests/test_remote.py",
     "ui/path-copy.js", "tests/test_paths.cjs",
+    "ui/vendor/easymde.min.js", "ui/vendor/easymde.min.css", "ui/vendor/LICENSE-easymde",
+    "ui/vendor/LICENSE-codemirror", "ui/vendor/LICENSE-codemirror-spell-checker", "ui/vendor/LICENSE-marked",
+    "ui/vendor/LICENSE-typo-js",
 ]
 
 

@@ -6,6 +6,7 @@ import re
 import socket
 import threading
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 import webview
@@ -31,8 +32,9 @@ class Notes:
         if self.theme not in ("light", "sage", "dark"):
             self.theme = "light"
         self.window = None
+        self.editing = False
         self.ready = threading.Event()
-        self.renderer = MarkdownIt("commonmark", {"html": False, "breaks": True}).enable("table")
+        self.renderer = MarkdownIt("commonmark", {"html": False, "breaks": True}).enable(["table", "strikethrough"])
         self._save()
 
     def _save(self):
@@ -83,6 +85,42 @@ class Notes:
                 self.properties_collapsed = value
             self._save()
             return self._snapshot()
+
+    def render_markdown(self, text):
+        if not isinstance(text, str) or len(text.encode('utf-8')) > 8_000_000:
+            raise ValueError('Invalid Markdown')
+        with self.lock:
+            return self.renderer.render(text)
+
+    def save_note(self, pin_id, text, expected_text):
+        if not isinstance(text, str) or len(text.encode('utf-8')) > 8_000_000:
+            raise ValueError('Invalid note text')
+        with self.lock:
+            pin = next((p for p in self.pins if p['id'] == pin_id), None)
+            if pin is None or pin['text'] != expected_text:
+                raise ValueError('Note changed or was removed; edits were not overwritten')
+            previous = dict(pin)
+            pin.setdefault('original_text', pin['text'])
+            pin.update(text=text, updated_at=datetime.now().isoformat(timespec='seconds'))
+            try:
+                self._save()
+            except Exception:
+                pin.clear()
+                pin.update(previous)
+                raise
+            return self._snapshot()
+
+    def set_editing(self, value):
+        if not isinstance(value, bool):
+            raise ValueError('Expected a boolean')
+        self.editing = value
+
+    def _closing(self):
+        if self.editing:
+            # FormClosing runs on the UI thread; defer JS until it has returned.
+            threading.Thread(target=lambda: self.window.evaluate_js('window.requestNotesClose()'), daemon=True).start()
+            return False
+        self._geometry()
 
     def copy_text(self, text):
         # Clipboard access must run on the Windows Forms STA thread.
@@ -215,6 +253,15 @@ class Bridge:
     def get_state(self):
         return self._notes.get_state()
 
+    def render_markdown(self, text):
+        return self._notes.render_markdown(text)
+
+    def save_note(self, pin_id, text, expected_text):
+        return self._notes.save_note(pin_id, text, expected_text)
+
+    def set_editing(self, value):
+        return self._notes.set_editing(value)
+
     def get_note(self, pin_id):
         return self._notes.get_note(pin_id)
 
@@ -261,7 +308,7 @@ def run(args, pin):
         text_select=True, background_color="#ffffff",
     )
     notes.window.events.loaded += notes.ready.set
-    notes.window.events.closing += notes._geometry
+    notes.window.events.closing += notes._closing
     notes.window.events.resized += lambda *_: notes._geometry()
     notes.window.events.moved += lambda *_: notes._geometry()
     notes.window.events.maximized += notes._sync_window_state

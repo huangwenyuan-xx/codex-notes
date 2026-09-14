@@ -73,6 +73,55 @@ class NotebookTests(unittest.TestCase):
         reopened.change('properties_collapsed', value=True)
         self.assertTrue(notes_web.Notes(self.args).get_state()['propertiesCollapsed'])
 
+    def test_edit_persists_markdown_and_preserves_metadata_and_original(self):
+        pin = pin_reply.make_pin('Plan', 'original', 'source')
+        notes = notes_web.Notes(self.args, pin)
+        text = '~~done~~\n\n**next**\n\n```sh\necho hello\n```'
+        notes.save_note(pin['id'], text, 'original')
+        reopened = notes_web.Notes(self.args)
+        saved = reopened.get_note(pin['id'])
+        self.assertEqual(saved['text'], text)
+        self.assertEqual(saved['original_text'], 'original')
+        self.assertIn('<s>done</s>', saved['html'])
+        for field in ('id', 'source', 'created_at', 'status', 'title'):
+            self.assertEqual(saved[field], pin[field])
+        reopened.save_note(pin['id'], '', text)
+        self.assertEqual(reopened.pins[0]['original_text'], 'original')
+        self.assertEqual(reopened.pins[0]['text'], '')
+
+    def test_edit_conflict_missing_note_and_invalid_input_do_not_overwrite(self):
+        pin = pin_reply.make_pin('Plan', 'original')
+        notes = notes_web.Notes(self.args, pin)
+        for args in [(pin['id'], 'new', 'stale'), ('missing', 'new', 'original'), (pin['id'], None, 'original')]:
+            with self.assertRaises(ValueError):
+                notes.save_note(*args)
+        self.assertEqual(notes.pins[0]['text'], 'original')
+        with patch.object(notes, '_save', side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):
+                notes.save_note(pin['id'], 'new', 'original')
+        self.assertEqual(notes.pins[0]['text'], 'original')
+        self.assertNotIn('original_text', notes.pins[0])
+
+    def test_preview_is_safe_and_does_not_save(self):
+        notes = notes_web.Notes(self.args)
+        before = pin_reply.STATE_FILE.read_bytes()
+        html = notes.render_markdown('~~done~~ <script>alert(1)</script>\n[x](javascript:alert(1))')
+        self.assertIn('<s>done</s>', html)
+        self.assertNotIn('<script>', html)
+        self.assertNotIn('href="javascript:', html)
+        self.assertEqual(pin_reply.STATE_FILE.read_bytes(), before)
+
+    def test_native_close_defers_to_editor_before_discarding_work(self):
+        notes = notes_web.Notes(self.args)
+        notes.set_editing(True)
+        with patch.object(notes_web.threading, 'Thread') as thread:
+            self.assertFalse(notes._closing())
+            thread.return_value.start.assert_called_once()
+        notes.set_editing(False)
+        with patch.object(notes, '_geometry') as geometry:
+            notes._closing()
+            geometry.assert_called_once()
+
     def test_send_uses_length_prefixed_utf8(self):
         server = socket.socket()
         self.addCleanup(server.close)

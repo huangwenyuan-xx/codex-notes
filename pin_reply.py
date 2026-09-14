@@ -94,7 +94,8 @@ def main() -> int:
         from webview.platforms.winforms import _is_chromium
         if not _is_chromium():
             raise RuntimeError("Microsoft Edge WebView2 Runtime is required.")
-        for name in ("index.html", "notes.css", "notes.js", "path-copy.js", "vendor/lucide.min.js"):
+        for name in ("index.html", "notes.css", "notes.js", "path-copy.js", "vendor/lucide.min.js",
+                     "vendor/easymde.min.js", "vendor/easymde.min.css"):
             if not (Path(__file__).parent / "ui" / name).is_file():
                 raise FileNotFoundError(name)
         print("Codex Notes runtime check passed.")

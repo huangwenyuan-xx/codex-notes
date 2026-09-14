@@ -4,9 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Codex Notes</title>
+  <link rel="stylesheet" href="vendor/easymde.min.css">
   <link rel="stylesheet" href="notes.css">
   <script src="vendor/lucide.min.js" defer></script>
   <script src="path-copy.js" defer></script>
+  <script src="vendor/easymde.min.js" defer></script>
   <script src="notes.js" defer></script>
 </head>
 <body>
@@ -36,6 +38,7 @@
       <div class="page-toolbar">
         <span id="page-position">固定回复</span>
         <div class="page-actions">
+          <button class="icon note-action" id="edit" title="编辑正文" aria-label="编辑正文"><i data-lucide="pencil"></i></button>
           <button class="icon note-action" id="copy" title="复制整条回复" aria-label="复制整条回复"><i data-lucide="copy"></i></button>
           <button class="icon note-action" id="export" title="导出 Markdown" aria-label="导出 Markdown"><i data-lucide="download"></i></button>
           <button class="icon" id="more" title="更多操作" aria-label="更多操作" aria-expanded="false"><i data-lucide="ellipsis"></i></button>
@@ -53,7 +56,21 @@
           </div>
           <div class="page-rule"></div>
           <div id="body" class="markdown"></div>
-          <div class="document-end"><i data-lucide="check"></i>已保存</div>
+          <section id="editor" hidden aria-label="编辑正文">
+            <div class="editor-actions">
+              <div class="editor-tabs" role="tablist" aria-label="正文模式">
+                <button id="editor-write" role="tab" aria-selected="true" aria-controls="editor-input">编辑</button>
+                <button id="editor-preview-tab" role="tab" aria-selected="false" aria-controls="editor-preview">预览</button>
+              </div>
+              <span id="edit-state" role="status">未修改</span>
+              <button id="edit-cancel" class="editor-command">取消</button>
+              <button id="edit-save" class="editor-command"><i data-lucide="check"></i>保存</button>
+            </div>
+            <div id="format-toolbar" class="format-toolbar" role="toolbar" aria-label="文本格式"></div>
+            <div id="editor-input" role="tabpanel" aria-labelledby="editor-write"><textarea id="edit-text" aria-label="Markdown 正文"></textarea></div>
+            <div id="editor-preview" class="markdown" role="tabpanel" aria-labelledby="editor-preview-tab" hidden></div>
+          </section>
+          <div id="document-end" class="document-end"><i data-lucide="check"></i>已保存</div>
         </article>
         <div id="empty" class="empty"><i data-lucide="files"></i><h2>还没有固定回复</h2></div>
       </div>
@@ -73,6 +90,7 @@
     </main>
   </div>
   <dialog id="confirm"><h2 id="confirm-title"></h2><p>此操作会删除本机保存的内容。</p><div><button id="cancel">取消</button><button id="confirm-delete" class="danger-confirm">删除</button></div></dialog>
+  <dialog id="unsaved"><h2>保留这次修改？</h2><p>正文有尚未保存的修改。</p><div><button id="edit-keep">继续编辑</button><button id="edit-discard">放弃修改</button><button id="edit-save-leave">保存</button></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <div class="resize-edge" data-edge="n" aria-hidden="true"></div>
   <div class="resize-edge" data-edge="s" aria-hidden="true"></div>
